@@ -219,9 +219,11 @@
   function hostOf(u){ try{ return new URL(normUrl(u)).hostname.replace(/^www\./,""); }catch(e){ return (u||"").replace(/^https?:\/\//i,"").split("/")[0]; } }
   function faviconSources(u){
     var h=hostOf(u); if(!h) return [];
+    var origin; try{ origin=new URL(normUrl(u)).origin; }catch(e){ origin="https://"+h; }
     return [
-      "https://www.google.com/s2/favicons?sz=64&domain="+encodeURIComponent(h),
-      "https://icons.duckduckgo.com/ip3/"+encodeURIComponent(h)+".ico"
+      origin+"/favicon.ico",                                   // the site's own icon (authoritative)
+      "https://icons.duckduckgo.com/ip3/"+encodeURIComponent(h)+".ico",
+      "https://www.google.com/s2/favicons?sz=64&domain="+encodeURIComponent(h)  // last resort (may be a generic globe)
     ];
   }
 
