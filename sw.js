@@ -1,5 +1,5 @@
 /* Quick Launch service worker — network-first (auto-updates online, works offline) */
-var CACHE = "quicklaunch-v1";
+var CACHE = "quicklaunch-v2";
 var ASSETS = [
   "./",
   "./index.html",

@@ -217,9 +217,12 @@
 
   function normUrl(u){ u=(u||"").trim(); if(!u) return ""; if(!/^https?:\/\//i.test(u)) u="https://"+u; return u; }
   function hostOf(u){ try{ return new URL(normUrl(u)).hostname.replace(/^www\./,""); }catch(e){ return (u||"").replace(/^https?:\/\//i,"").split("/")[0]; } }
-  function faviconFor(u){
-    var h=hostOf(u); if(!h) return "";
-    return "https://www.google.com/s/2/favicons?sz=64&domain="+encodeURIComponent(h);
+  function faviconSources(u){
+    var h=hostOf(u); if(!h) return [];
+    return [
+      "https://www.google.com/s2/favicons?sz=64&domain="+encodeURIComponent(h),
+      "https://icons.duckduckgo.com/ip3/"+encodeURIComponent(h)+".ico"
+    ];
   }
 
   function normalize(l){
@@ -250,16 +253,24 @@
       var l=o.l, i=o.i;
       var t=document.createElement("div");
       t.className="tile";
-      var iconSrc=l.icon||faviconFor(l.url);
       var letter=(l.name||hostOf(l.url)||"?").charAt(0).toUpperCase();
       t.innerHTML=
         '<span class="del" aria-label="Smazat">×</span>'+
-        '<span class="fav">'+(iconSrc?'<img alt="">':'<span class="letter">'+letter+'</span>')+'</span>'+
+        '<span class="fav"><img alt=""></span>'+
         '<span class="tname"></span>'+
         '<span class="thost"></span>';
-      if(iconSrc){
-        var im=t.querySelector(".fav img"); im.src=iconSrc;
-        im.addEventListener("error",function(){ t.querySelector(".fav").innerHTML='<span class="letter">'+letter+'</span>'; });
+      var favEl=t.querySelector(".fav"), im=t.querySelector(".fav img");
+      var sources = l.icon ? [l.icon] : faviconSources(l.url);
+      if(sources.length){
+        var idx=0;
+        im.addEventListener("error",function(){
+          idx++;
+          if(idx<sources.length){ im.src=sources[idx]; }
+          else { favEl.innerHTML='<span class="letter">'+letter+'</span>'; }
+        });
+        im.src=sources[0];
+      } else {
+        favEl.innerHTML='<span class="letter">'+letter+'</span>';
       }
       t.querySelector(".tname").textContent=l.name||hostOf(l.url);
       t.querySelector(".thost").textContent=hostOf(l.url);
