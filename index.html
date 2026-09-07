@@ -64,7 +64,8 @@
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
   .thost{font-family:var(--mono);font-size:10px;color:var(--muted-2);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   /* edit mode */
-  .editing .tile{border-style:dashed;border-color:var(--accent-dim)}
+  .editing .tile{border-style:dashed;border-color:var(--accent-dim);touch-action:none;-webkit-user-select:none;user-select:none}
+  .tile.drag{opacity:.9;transform:scale(1.06);box-shadow:0 10px 26px rgba(0,0,0,.5);border-color:var(--accent);z-index:5}
   .del{position:absolute;top:-7px;right:-7px;width:24px;height:24px;border-radius:50%;border:2px solid var(--bg);
     background:var(--down);color:#fff;font-size:14px;line-height:1;display:none;align-items:center;justify-content:center;cursor:pointer}
   .editing .del{display:flex}
@@ -273,10 +274,13 @@
       }
       t.querySelector(".tname").textContent=l.name||hostOf(l.url);
       t.querySelector(".thost").textContent=hostOf(l.url);
+      t.dataset.i=i;
       t.addEventListener("click",function(e){
         if(e.target.classList.contains("del")) return;
+        if(justDragged) return;
         if(editing){ openEdit(i); } else { location.href=normUrl(l.url); }
       });
+      t.addEventListener("pointerdown",function(e){ dragStart(e,t); });
       t.querySelector(".del").addEventListener("click",function(ev){
         ev.stopPropagation(); links.splice(i,1); save(); render(); toast("Smazáno");
       });
@@ -306,7 +310,49 @@
     document.body.classList.toggle("editing",editing);
     this.classList.toggle("on",editing);
     this.textContent=editing?"Hotovo":"Upravit";
+    if(editing && links.length>1 && !filter) toast("Přetažením změníš pořadí");
   });
+
+  /* ---- drag to reorder (edit mode, pointer-based for touch) ---- */
+  var drag=null, justDragged=false;
+  function dragStart(e,node){
+    if(!editing || filter) return;
+    if(e.target.classList.contains("del")) return;
+    drag={node:node,moved:false,x:e.clientX,y:e.clientY};
+    try{ node.setPointerCapture(e.pointerId); }catch(_){}
+  }
+  function dragMove(e){
+    if(!drag) return;
+    if(!drag.moved){
+      if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y) < 6) return;
+      drag.moved=true; drag.node.classList.add("drag");
+    }
+    e.preventDefault();
+    drag.node.style.visibility="hidden";
+    var under=document.elementFromPoint(e.clientX,e.clientY);
+    drag.node.style.visibility="";
+    var tgt=under&&under.closest?under.closest(".tile"):null;
+    if(tgt&&tgt!==drag.node&&tgt.parentNode===gridEl){
+      var r=tgt.getBoundingClientRect();
+      var after=(e.clientY>r.top+r.height/2)||(e.clientY>=r.top&&e.clientY<=r.bottom&&e.clientX>r.left+r.width/2);
+      gridEl.insertBefore(drag.node, after?tgt.nextSibling:tgt);
+    }
+  }
+  function dragEnd(){
+    if(!drag) return;
+    var moved=drag.moved; drag.node.classList.remove("drag"); drag=null;
+    if(moved){
+      var order=[];
+      Array.prototype.forEach.call(gridEl.querySelectorAll(".tile"),function(el){ order.push(parseInt(el.dataset.i,10)); });
+      var nl=order.map(function(i){return links[i];}).filter(Boolean);
+      if(nl.length===links.length){ links=nl; save(); }
+      justDragged=true; setTimeout(function(){ justDragged=false; },60);
+      render();
+    }
+  }
+  document.addEventListener("pointermove",dragMove,{passive:false});
+  document.addEventListener("pointerup",dragEnd);
+  document.addEventListener("pointercancel",dragEnd);
 
   /* ---- edit sheet ---- */
   var editScrim=$("editScrim");
