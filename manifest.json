@@ -4,7 +4,7 @@
   "description": "Rychlé spouštění webových stránek.",
   "start_url": "./",
   "scope": "./",
-  "display": "browser",
+  "display": "standalone",
   "orientation": "portrait",
   "background_color": "#16151D",
   "theme_color": "#16151D",
