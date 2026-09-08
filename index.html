@@ -241,7 +241,8 @@
         var u=new URL(url);
         var scheme=u.protocol.replace(":","");
         var rest=url.slice(u.protocol.length+2); // strip "scheme://"
-        location.href="intent://"+rest+"#Intent;scheme="+scheme+";package="+pkg+
+        location.href="intent://"+rest+"#Intent;scheme="+scheme+
+          ";action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package="+pkg+
           ";S.browser_fallback_url="+encodeURIComponent(url)+";end";
         return;
       }catch(e){ /* fall back to normal open */ }
